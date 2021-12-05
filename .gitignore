@@ -1,0 +1,7 @@
+# Custom folder / files
+materials/
+config.toml
+bin/
+
+# Excluding this files
+!.gitkeep
