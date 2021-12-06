@@ -1,19 +1,19 @@
 #Build
 FROM golang:1.17 AS build
 
-WORKDIR /go-app
+WORKDIR /app
 
-COPY * ./
-RUN go mod download
-
-RUN CGO_ENABLED=0 go build -o /app
+COPY . .
+RUN go mod download && \
+    go mod tidy && \
+    CGO_ENABLED=0 go build -o /app/app -ldflags "-s -w" cmd/main.go
 
 # Deploy
 FROM gcr.io/distroless/static-debian11
 
 WORKDIR /
 
-COPY --from=build /app /
+COPY --from=build /app/app /
 
 USER nonroot:nonroot
 
