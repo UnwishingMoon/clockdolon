@@ -12,7 +12,7 @@ FROM gcr.io/distroless/static-debian11
 
 WORKDIR /
 
-COPY --from=build /app/app /
+COPY --from=build /app/app /app/config.toml /
 
 USER nonroot:nonroot
 
