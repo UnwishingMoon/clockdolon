@@ -20,7 +20,7 @@ func Start() (*discordgo.Session, error) {
 
 	// Handler for messages
 	dg.AddHandler(MessageCreate)
-	dg.Identify.Intents = discordgo.IntentsGuildMessages
+	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds
 
 	// Starting the connection to discord
 	if err = dg.Open(); err != nil {
@@ -80,33 +80,47 @@ func timeCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string)
 	if math.Mod(time.Since(cetus.Cetus.DayStart).Seconds(), 150*60) < 100*60 {
 		// Day
 		remaining := time.Until(cetus.Cetus.NightStart.Add(daysPassed)).Round(1 * time.Second)
-		description = fmt.Sprintf("`%s`"+" remaining until **night**!", remaining)
+		description = fmt.Sprintf("`%s` remaining until **night**!", remaining)
 	} else {
 		// Night
 		remaining := time.Until(cetus.Cetus.NightEnd.Add(daysPassed)).Round(1 * time.Second)
-		description = fmt.Sprintf("`%s`"+" remaining until the end of the **night**!", remaining)
+		description = fmt.Sprintf("`%s` remaining until the end of the **night**!", remaining)
 	}
 
-	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-		Description: description,
-		Color:       8359053,
+	s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+		Embed: &discordgo.MessageEmbed{
+			Description: description,
+			Color:       8359053,
+		},
+		Reference: m.Reference(),
 	})
 }
 
 func alertCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string) {
 	//var description string
+	userInvisible := ""
 
 	if len(cmd) < 2 {
-		s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-			Description: "Sorry. The command needs an argument (1m-60m are allowed)",
-			Color:       8359053,
+		s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+			Embed: &discordgo.MessageEmbed{
+				Description: "Sorry. The command needs an argument (1m-60m are allowed)",
+				Color:       8359053,
+			},
+			Reference: m.Reference(),
 		})
 		return
 	}
 
-	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-		Description: "Sorry. The command needs an argument (1m-60m are allowed)",
-		Color:       8359053,
+	if pr, err := s.State.Presence(m.GuildID, m.Author.ID); err == nil && pr.Status == discordgo.StatusOnline {
+		userInvisible = "\n\n**You have to be online and not invisible for it to work!**"
+	}
+
+	s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+		Embed: &discordgo.MessageEmbed{
+			Description: fmt.Sprintf("You will be notified `%s minutes` before **night**!%v", cmd[1], userInvisible),
+			Color:       8359053,
+		},
+		Reference: m.Reference(),
 	})
 }
 
