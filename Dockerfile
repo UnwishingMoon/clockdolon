@@ -1,5 +1,5 @@
 #Build
-FROM golang:1.17 AS build
+FROM --platform=$BUILDPLATFORM golang:1.17 AS build
 
 WORKDIR /app
 
