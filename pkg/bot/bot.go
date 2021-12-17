@@ -97,8 +97,7 @@ func timeCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string)
 }
 
 func alertCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string) {
-	//var description string
-	userInvisible := ""
+	description := "You will be notified `%s minutes` before **night**!"
 
 	if len(cmd) < 2 {
 		s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
@@ -112,12 +111,12 @@ func alertCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string
 	}
 
 	if pr, err := s.State.Presence(m.GuildID, m.Author.ID); err == nil && pr.Status == discordgo.StatusOffline {
-		userInvisible = "\n\n**You have to be online to receive a notification from the alert!**"
+		description += "\n\n**You have to be online to receive a notification from the alert!**"
 	}
 
 	s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
 		Embed: &discordgo.MessageEmbed{
-			Description: fmt.Sprintf("You will be notified `%s minutes` before **night**!%v", cmd[1], userInvisible),
+			Description: fmt.Sprintf(description, cmd[1]),
 			Color:       8359053,
 		},
 		Reference: m.Reference(),
