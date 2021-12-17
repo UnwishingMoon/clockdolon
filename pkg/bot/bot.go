@@ -20,7 +20,7 @@ func Start() (*discordgo.Session, error) {
 
 	// Handler for messages
 	dg.AddHandler(MessageCreate)
-	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds
+	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsGuildPresences | discordgo.IntentsGuildMembers | discordgo.IntentsGuilds
 
 	// Starting the connection to discord
 	if err = dg.Open(); err != nil {
@@ -111,8 +111,8 @@ func alertCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string
 		return
 	}
 
-	if pr, err := s.State.Presence(m.GuildID, m.Author.ID); err == nil && pr.Status == discordgo.StatusOnline {
-		userInvisible = "\n\n**You have to be online and not invisible for it to work!**"
+	if pr, err := s.State.Presence(m.GuildID, m.Author.ID); err == nil && pr.Status == discordgo.StatusOffline {
+		userInvisible = "\n\n**You have to be online to receive a notification from the alert!**"
 	}
 
 	s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
