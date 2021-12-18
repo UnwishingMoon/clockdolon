@@ -8,14 +8,15 @@ import (
 
 	"github.com/UnwishingMoon/clockdolon/pkg/bot"
 	"github.com/UnwishingMoon/clockdolon/pkg/cetus"
+	"github.com/UnwishingMoon/clockdolon/pkg/db"
 )
 
 func main() {
 	cetus.PopulateCetusTime()
 
 	// Opens Database connection
-	//db.Start()
-	//defer db.Close()
+	db.Start()
+	defer db.Close()
 
 	// Starting discord bot
 	dg, err := bot.Start()

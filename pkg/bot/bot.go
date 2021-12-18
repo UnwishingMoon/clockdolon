@@ -3,11 +3,13 @@ package bot
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/UnwishingMoon/clockdolon/pkg/app"
 	"github.com/UnwishingMoon/clockdolon/pkg/cetus"
+	"github.com/UnwishingMoon/clockdolon/pkg/db"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -100,13 +102,24 @@ func alertCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string
 	description := "You will be notified `%s minutes` before **night**!"
 
 	if len(cmd) < 2 {
-		s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-			Embed: &discordgo.MessageEmbed{
-				Description: "Sorry. The command needs an argument (1m-60m are allowed)",
-				Color:       8359053,
-			},
-			Reference: m.Reference(),
-		})
+		s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "Sorry. The command needs an argument (1-60)"))
+		return
+	}
+
+	minutes, err := strconv.Atoi(cmd[1])
+	if err != nil || minutes < 1 || minutes > 60 {
+		s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "Sorry. The argument specified is invalid. Only numbers from 1 to 60 are allowed."))
+		return
+	}
+
+	if db.UserAlertExist(m.GuildID, m.Author.ID) {
+		s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "Sorry. You already have another alert set. Remove that one before trying again."))
+		return
+	}
+
+	err = db.AddUserAlert(m.GuildID, m.Author.ID, minutes)
+	if err != nil {
+		s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "Something went wrong from our end. Please try again later!"))
 		return
 	}
 
@@ -114,13 +127,7 @@ func alertCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string
 		description += "\n\n**You have to be online to receive a notification from the alert!**"
 	}
 
-	s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
-		Embed: &discordgo.MessageEmbed{
-			Description: fmt.Sprintf(description, cmd[1]),
-			Color:       8359053,
-		},
-		Reference: m.Reference(),
-	})
+	s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, description, minutes))
 }
 
 func removeCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string) {
@@ -134,7 +141,7 @@ func helpCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	**Commands**
 	` + "`!help`" + ` to print this message
 	` + "`!time`" + ` to print the time until night
-	` + "`!alert`" + ` followed by the time you want to be alerted (1m-60m are allowed)
+	` + "`!alert`" + ` followed by the time you want to be alerted (1-60 minutes)
 	` + "`!remove`" + ` to remove yourself from the alert
 
 	**Support**
@@ -162,4 +169,16 @@ func meCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			IconURL: "https://www.diegocastagna.com/assets/img/projects/clockdolon-icon.bf37ry4.png",
 		},
 	})
+}
+
+func sendMessage(m *discordgo.MessageCreate, description string, args ...interface{}) *discordgo.MessageSend {
+	ms := &discordgo.MessageSend{
+		Embed: &discordgo.MessageEmbed{
+			Description: fmt.Sprintf(description, args...),
+			Color:       8359053,
+		},
+		Reference: m.Reference(),
+	}
+
+	return ms
 }
