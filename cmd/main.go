@@ -16,7 +16,6 @@ func main() {
 
 	// Opens Database connection
 	db.Start()
-	defer db.Close()
 
 	// Starting discord bot
 	dg, err := bot.Start()

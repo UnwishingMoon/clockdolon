@@ -13,9 +13,15 @@ var db *sql.DB
 
 func Start() {
 	// Opening Database connection
-	db, err := sql.Open("mysql", app.Conf.DB.User+":"+app.Conf.DB.Pass+"@"+"/"+app.Conf.DB.Database)
+	var err error
+	db, err = sql.Open("mysql", app.Conf.DB.User+":"+app.Conf.DB.Pass+"@/"+app.Conf.DB.Database)
+
 	if err != nil {
 		log.Fatalf("[FATAL] Could not open connection to database: %s", err.Error())
+	}
+
+	if err = db.Ping(); err != nil {
+		log.Fatalf("[FATAL] Could not open connect to database: %s", err.Error())
 	}
 
 	db.SetConnMaxLifetime(time.Minute * 3)
@@ -23,17 +29,16 @@ func Start() {
 	db.SetMaxIdleConns(10)
 }
 
-func Close() {
-	db.Close()
-}
-
 func UserAlertExist(guild string, user string) bool {
-	var e int
-	if err := db.QueryRow("SELECT AL_COD FROM alerts WHERE AL_GUILD=? AND AL_USER=?", guild, user).Scan(&e); err != nil {
-		if err == sql.ErrNoRows {
-			return true
-		}
-		return false
+	row, err := db.Query("SELECT AL_COD FROM alerts WHERE AL_GUILD=? AND AL_USER=? AND AL_DISABLED=0 LIMIT 1", guild, user)
+	if err != nil {
+		panic(err)
+
+	}
+	defer row.Close()
+
+	if row.Next() {
+		return true
 	}
 
 	return false
@@ -41,5 +46,10 @@ func UserAlertExist(guild string, user string) bool {
 
 func AddUserAlert(guild string, user string, minutes int) error {
 	_, err := db.Exec("INSERT INTO alerts SET AL_GUILD=?, AL_USER=?, AL_TIME=?", guild, user, minutes)
+	return err
+}
+
+func RemoveUserAlert(guild string, user string) error {
+	_, err := db.Exec("UPDATE alerts SET AL_DISABLED=1 WHERE AL_GUILD=? AND AL_USER=?", guild, user)
 	return err
 }

@@ -99,7 +99,7 @@ func timeCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string)
 }
 
 func alertCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string) {
-	description := "You will be notified `%s minutes` before **night**!"
+	description := "You will be notified `%v minutes` before **night**!"
 
 	if len(cmd) < 2 {
 		s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "Sorry. The command needs an argument (1-60)"))
@@ -131,7 +131,9 @@ func alertCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string
 }
 
 func removeCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string) {
+	db.RemoveUserAlert(m.GuildID, m.Author.ID)
 
+	s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "Previous alert removed!"))
 }
 
 func helpCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
