@@ -13,6 +13,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+// Start is used to start the discord handler and bot
 func Start() (*discordgo.Session, error) {
 	// Creating the bot
 	dg, err := discordgo.New("Bot " + app.Conf.Bot.Token)
@@ -32,6 +33,7 @@ func Start() (*discordgo.Session, error) {
 	return dg, nil
 }
 
+// MessageCreate is used to handle all messages received from discord
 func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	var isAdmin bool = false
 
@@ -85,8 +87,9 @@ func linkCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	for _, role := range roles {
 		for _, mrole := range m.Member.Roles {
 			if role.ID == mrole {
-				if role.Permissions&discordgo.PermissionManageServer != discordgo.PermissionManageServer {
-					s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "You need the **Manage Server** to do this!"))
+				if role.Permissions&discordgo.PermissionAdministrator != discordgo.PermissionAdministrator &&
+					role.Permissions&discordgo.PermissionManageServer != discordgo.PermissionManageServer {
+					s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "You need the **Manage Server** or **Administrator** permission to do this!"))
 					return
 				}
 
@@ -173,6 +176,7 @@ func helpCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	` + "`!time`" + ` to print the time until night
 	` + "`!alert`" + ` followed by the time you want to be alerted (1-60 minutes)
 	` + "`!remove`" + ` to remove yourself from the alert
+	` + "`!link`" + ` to receive alerts on the channel, it must be set to be able to use alerts!!
 
 	**Support**
 	If you want to help and keep the bot running, you can [donate](https://streamlabs.com/unwishingmoon/) here.

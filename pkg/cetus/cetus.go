@@ -8,34 +8,41 @@ import (
 	"time"
 )
 
-type WorldStateJson struct {
-	SyndicateMissions []SyndicateMissionJson `json:"SyndicateMissions"`
+// WorldStateJSON is used to extract json infos
+type WorldStateJSON struct {
+	SyndicateMissions []SyndicateMissionJSON `json:"SyndicateMissions"`
 }
 
-type SyndicateMissionJson struct {
+// SyndicateMissionJSON is used to extract json infos
+type SyndicateMissionJSON struct {
 	Tag       string   `json:"Tag"`
-	StartDate DateJson `json:"Activation"`
-	EndDate   DateJson `json:"Expiry"`
+	StartDate DateJSON `json:"Activation"`
+	EndDate   DateJSON `json:"Expiry"`
 }
 
-type DateJson struct {
-	Date NumberJson `json:"$date"`
+// DateJSON is used to extract json infos
+type DateJSON struct {
+	Date NumberJSON `json:"$date"`
 }
 
-type NumberJson struct {
+// NumberJSON is used to extract json infos
+type NumberJSON struct {
 	Timestamp string `json:"$numberLong"`
 }
 
-type CetusTime struct {
+// Time is the time struct for Cetus
+type Time struct {
 	DayStart   time.Time
 	NightStart time.Time
 	NightEnd   time.Time
 }
 
-var Cetus = &CetusTime{}
+// Cetus contains all the retrieved infos
+var Cetus = &Time{}
 
+// PopulateCetusTime is used to retrieve Cetus infos from warframe servers
 func PopulateCetusTime() {
-	var worldState = &WorldStateJson{}
+	var worldState = &WorldStateJSON{}
 
 	resp, err := http.Get("https://content.warframe.com/dynamic/worldState.php")
 	if err != nil {

@@ -11,6 +11,7 @@ import (
 
 var db *sql.DB
 
+// Start used to start the database connection
 func Start() {
 	// Opening Database connection
 	var err error
@@ -29,6 +30,7 @@ func Start() {
 	db.SetMaxIdleConns(10)
 }
 
+// UserAlertExist checks if the user alerts already exists in a guild
 func UserAlertExist(guild string, user string) bool {
 	row, err := db.Query("SELECT AL_COD FROM alerts WHERE AL_GUILD=? AND AL_USER=? AND AL_DISABLED=0 LIMIT 1", guild, user)
 	if err != nil {
@@ -43,16 +45,19 @@ func UserAlertExist(guild string, user string) bool {
 	return false
 }
 
+// AddUserAlert add an alert for the user
 func AddUserAlert(guild string, user string, minutes int) error {
 	_, err := db.Exec("INSERT INTO alerts SET AL_GUILD=?, AL_USER=?, AL_TIME=?", guild, user, minutes)
 	return err
 }
 
+// RemoveUserAlert removes the alert for a user (by disabling it)
 func RemoveUserAlert(guild string, user string) error {
 	_, err := db.Exec("UPDATE alerts SET AL_DISABLED=1 WHERE AL_GUILD=? AND AL_USER=?", guild, user)
 	return err
 }
 
+// LinkChannel links a channel for the bot alerts
 func LinkChannel(guild string, channel string) error {
 	var cod int
 	row, err := db.Query("SELECT GC_COD FROM guild_channels WHERE GC_GUILD=? LIMIT 1", guild)
