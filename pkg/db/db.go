@@ -32,8 +32,7 @@ func Start() {
 func UserAlertExist(guild string, user string) bool {
 	row, err := db.Query("SELECT AL_COD FROM alerts WHERE AL_GUILD=? AND AL_USER=? AND AL_DISABLED=0 LIMIT 1", guild, user)
 	if err != nil {
-		panic(err)
-
+		return false
 	}
 	defer row.Close()
 
@@ -51,5 +50,26 @@ func AddUserAlert(guild string, user string, minutes int) error {
 
 func RemoveUserAlert(guild string, user string) error {
 	_, err := db.Exec("UPDATE alerts SET AL_DISABLED=1 WHERE AL_GUILD=? AND AL_USER=?", guild, user)
+	return err
+}
+
+func LinkChannel(guild string, channel string) error {
+	var cod int
+	row, err := db.Query("SELECT GC_COD FROM guild_channels WHERE GC_GUILD=? LIMIT 1", guild)
+	if err != nil {
+		return err
+	}
+	defer row.Close()
+
+	if row.Next() {
+		if err = row.Scan(&cod); err != nil {
+			return err
+		}
+
+		_, err := db.Exec("UPDATE guild_channels SET GC_CHANNEL=? WHERE GC_COD=?", channel, cod)
+		return err
+	}
+
+	_, err = db.Exec("INSERT INTO guild_channels SET GC_GUILD=?, GC_CHANNEL=?", guild, channel)
 	return err
 }

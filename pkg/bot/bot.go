@@ -70,9 +70,37 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		alertCommand(s, m, cmd)
 	case "remove":
 		removeCommand(s, m, cmd)
-	case "me":
-		meCommand(s, m)
+	case "link":
+		linkCommand(s, m)
 	}
+}
+
+func linkCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
+	roles, err := s.GuildRoles(m.GuildID)
+	if err != nil {
+		s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "Something went wrong from our end. Please try again later!"))
+		return
+	}
+
+	for _, role := range roles {
+		for _, mrole := range m.Member.Roles {
+			if role.ID == mrole {
+				if role.Permissions&discordgo.PermissionManageServer != discordgo.PermissionManageServer {
+					s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "You need the **Manage Server** to do this!"))
+					return
+				}
+
+				// It has the permission to execute this command
+				err := db.LinkChannel(m.GuildID, m.ChannelID)
+				if err != nil {
+					s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "Something went wrong from our end. Please try again later!"))
+					return
+				}
+			}
+		}
+	}
+
+	s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "**Channel linked**!\nAlerts will be posted here!"))
 }
 
 func timeCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string) {
@@ -149,19 +177,6 @@ func helpCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	**Support**
 	If you want to help and keep the bot running, you can [donate](https://streamlabs.com/unwishingmoon/) here.
 	`
-
-	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-		Description: description,
-		Color:       8359053,
-		Author: &discordgo.MessageEmbedAuthor{
-			Name:    "Clockdolon",
-			IconURL: "https://www.diegocastagna.com/assets/img/projects/clockdolon-icon.bf37ry4.png",
-		},
-	})
-}
-
-func meCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
-	const description = ``
 
 	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
 		Description: description,
