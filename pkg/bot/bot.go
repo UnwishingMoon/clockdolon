@@ -2,6 +2,7 @@ package bot
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -13,12 +14,17 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+var tk *time.Ticker
+var dg *discordgo.Session
+
 // Start is used to start the discord handler and bot
-func Start() (*discordgo.Session, error) {
+func Start() {
+	var err error
+
 	// Creating the bot
-	dg, err := discordgo.New("Bot " + app.Conf.Bot.Token)
+	dg, err = discordgo.New("Bot " + app.Conf.Bot.Token)
 	if err != nil {
-		return nil, err
+		log.Fatalf("[FATAL] Error during bot creation: %s", err.Error())
 	}
 
 	// Handler for messages
@@ -27,10 +33,26 @@ func Start() (*discordgo.Session, error) {
 
 	// Starting the connection to discord
 	if err = dg.Open(); err != nil {
-		return nil, err
+		log.Fatalf("[FATAL] Error during bot initialization: %s", err.Error())
 	}
 
-	return dg, nil
+	tk = time.NewTicker(1 * time.Minute)
+
+	go func() {
+		for {
+			select {
+			case <-tk.C:
+
+				alertScheduled()
+			}
+		}
+	}()
+}
+
+// Close is invoked to shutdown all sockets and connections
+func Close() {
+	tk.Stop()
+	dg.Close()
 }
 
 // MessageCreate is used to handle all messages received from discord
@@ -87,23 +109,24 @@ func linkCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	for _, role := range roles {
 		for _, mrole := range m.Member.Roles {
 			if role.ID == mrole {
-				if role.Permissions&discordgo.PermissionAdministrator != discordgo.PermissionAdministrator &&
-					role.Permissions&discordgo.PermissionManageServer != discordgo.PermissionManageServer {
-					s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "You need the **Manage Server** or **Administrator** permission to do this!"))
-					return
-				}
+				if role.Permissions&discordgo.PermissionAdministrator == discordgo.PermissionAdministrator ||
+					role.Permissions&discordgo.PermissionManageServer == discordgo.PermissionManageServer {
+					// It has the permission to execute this command
+					err := db.LinkChannel(m.GuildID, m.ChannelID)
+					if err != nil {
+						s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "Something went wrong from our end. Please try again later!"))
+						return
+					}
 
-				// It has the permission to execute this command
-				err := db.LinkChannel(m.GuildID, m.ChannelID)
-				if err != nil {
-					s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "Something went wrong from our end. Please try again later!"))
+					s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "**Channel linked**!\nAlerts will be posted here!"))
 					return
 				}
 			}
 		}
 	}
 
-	s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "**Channel linked**!\nAlerts will be posted here!"))
+	s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "You need the **Manage Server** or **Administrator** permission to do this!"))
+	return
 }
 
 func timeCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string) {
@@ -134,6 +157,11 @@ func alertCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string
 
 	if len(cmd) < 2 {
 		s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "Sorry. The command needs an argument (1-60)"))
+		return
+	}
+
+	if !db.GuildIsLinked(m.GuildID) {
+		s.ChannelMessageSendComplex(m.ChannelID, sendMessage(m, "Sorry. You have to **link** a channel before using this command, use `!help` for all the available commands"))
 		return
 	}
 
@@ -202,4 +230,32 @@ func sendMessage(m *discordgo.MessageCreate, description string, args ...interfa
 	}
 
 	return ms
+}
+
+func alertScheduled() {
+	var timeStr string
+	minutes := cetus.WorldTime()
+
+	// Skip if out of my interval
+	if minutes < 1 || minutes > 60 {
+		return
+	}
+
+	if minutes == 1 {
+		timeStr = "minute"
+	} else {
+		timeStr = "minutes"
+	}
+
+	users := db.ScheduledAlerts(minutes)
+
+	if len(users) == 0 {
+		return
+	}
+
+	for channel, m := range users {
+		description := fmt.Sprintf("**Clockdolon**\n`%v %s` before the **night**!\n\n<@%s>", minutes, timeStr, strings.Join(m, "> <@"))
+
+		dg.ChannelMessageSend(channel, description)
+	}
 }

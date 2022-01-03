@@ -3,6 +3,7 @@ package cetus
 import (
 	"encoding/json"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -40,8 +41,23 @@ type Time struct {
 // Cetus contains all the retrieved infos
 var Cetus = &Time{}
 
-// PopulateCetusTime is used to retrieve Cetus infos from warframe servers
-func PopulateCetusTime() {
+func Start() {
+	populateTime()
+
+	tk := time.NewTicker(24 * time.Hour)
+
+	go func() {
+		for {
+			select {
+			case <-tk.C:
+				populateTime()
+			}
+		}
+	}()
+}
+
+// PopulateTime is used to retrieve Cetus infos from warframe servers
+func populateTime() {
 	var worldState = &WorldStateJSON{}
 
 	resp, err := http.Get("https://content.warframe.com/dynamic/worldState.php")
@@ -61,4 +77,16 @@ func PopulateCetusTime() {
 			Cetus.NightEnd = time.UnixMilli(end)
 		}
 	}
+}
+
+// WorldTime return the string time before the night appear
+func WorldTime() float64 {
+	daysPassed := time.Duration(time.Since(Cetus.DayStart).Seconds() / (150 * 60) * float64(time.Second))
+
+	if math.Mod(time.Since(Cetus.DayStart).Seconds(), 150*60) < 100*60 {
+		// Day
+		return time.Until(Cetus.NightStart.Add(daysPassed)).Truncate(1 * time.Minute).Minutes()
+	}
+
+	return 0
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,17 +11,15 @@ import (
 )
 
 func main() {
-	cetus.PopulateCetusTime()
+	// Starts cetus timers and populate structs
+	cetus.Start()
 
 	// Opens Database connection
 	db.Start()
 
 	// Starting discord bot
-	dg, err := bot.Start()
-	if err != nil {
-		log.Fatalf("[FATAL] Error during bot initialization: %s", err.Error())
-	}
-	defer dg.Close()
+	bot.Start()
+	defer bot.Close()
 
 	// Waiting for a signal to exit
 	sc := make(chan os.Signal, 1)

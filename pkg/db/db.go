@@ -78,3 +78,49 @@ func LinkChannel(guild string, channel string) error {
 	_, err = db.Exec("INSERT INTO guild_channels SET GC_GUILD=?, GC_CHANNEL=?", guild, channel)
 	return err
 }
+
+// GuildIsLinked checks is a guild already has a linked channel
+func GuildIsLinked(guild string) bool {
+	row, err := db.Query("SELECT GC_COD FROM guild_channels WHERE GC_GUILD=? LIMIT 1", guild)
+	if err != nil {
+		return false
+	}
+	defer row.Close()
+
+	if row.Next() {
+		return true
+	}
+
+	return false
+}
+
+// ScheduledAlerts returns a slice with all the users from a guild
+func ScheduledAlerts(minutes float64) map[string][]string {
+	rows, err := db.Query("SELECT AL_USER, GC_CHANNEL FROM alerts INNER JOIN guild_channels ON AL_GUILD=GC_GUILD WHERE AL_TIME=? AND AL_DISABLED=0", minutes)
+	if err != nil {
+		log.Printf("[Warn] Could not scan rows: %s", err.Error())
+		return nil
+	}
+	defer rows.Close()
+
+	users := make(map[string][]string)
+
+	for rows.Next() {
+		var (
+			user    string
+			channel string
+		)
+
+		if err := rows.Scan(&user, &channel); err != nil {
+			log.Printf("[Warn] Could not scan rows: %s", err.Error())
+			continue // Should not use it
+		}
+
+		if _, prs := users[channel]; !prs {
+			users[channel] = make([]string, 0)
+		}
+		users[channel] = append(users[channel], user)
+	}
+
+	return users
+}
