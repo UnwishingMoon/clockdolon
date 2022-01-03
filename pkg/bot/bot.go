@@ -57,7 +57,7 @@ func Close() {
 
 // MessageCreate is used to handle all messages received from discord
 func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	var isAdmin bool = false
+	//var isAdmin bool = false
 
 	// Ignores other bots message and itself
 	if m.Author.ID == s.State.User.ID || m.Author.Bot {
@@ -70,16 +70,16 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Checking if user is an admin
-	for _, v := range app.Conf.Bot.Admins {
+	/* for _, v := range app.Conf.Bot.Admins {
 		if m.Author.ID == v {
 			isAdmin = true
 		}
-	}
+	} */
 
 	// Temporary block
-	if !isAdmin {
+	/* if !isAdmin {
 		return
-	}
+	} */
 
 	// Removing the prefix
 	cmd := strings.Fields(m.Content[len(app.Conf.Bot.Prefix):])
