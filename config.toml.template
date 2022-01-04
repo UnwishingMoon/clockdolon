@@ -4,6 +4,7 @@ token = ""
 admins = []
 
 [database]
+host = ""
 database = ""
 user = ""
 pass = ""
