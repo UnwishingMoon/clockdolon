@@ -15,7 +15,7 @@ var db *sql.DB
 func Start() {
 	// Opening Database connection
 	var err error
-	db, err = sql.Open("mysql", app.Conf.DB.User+":"+app.Conf.DB.Pass+"@tcp("+app.Conf.DB.Host+")/"+app.Conf.DB.Database)
+	db, err = sql.Open("mysql", app.Conf.DB.User+":"+app.Conf.DB.Pass+"@"+app.Conf.DB.Protocol+"("+app.Conf.DB.Host+")/"+app.Conf.DB.Database)
 
 	if err != nil {
 		log.Fatalf("[FATAL] Could not open connection to database: %s", err.Error())

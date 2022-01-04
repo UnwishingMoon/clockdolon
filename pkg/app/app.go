@@ -22,6 +22,7 @@ type botConf struct {
 
 type databaseConf struct {
 	Host     string `toml:"host"`
+	Protocol string `toml:"protocol"`
 	Database string `toml:"database"`
 	User     string `toml:"user"`
 	Pass     string `toml:"pass"`

@@ -5,6 +5,7 @@ admins = []
 
 [database]
 host = ""
+protocol = ""
 database = ""
 user = ""
 pass = ""
