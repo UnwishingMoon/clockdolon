@@ -95,32 +95,6 @@ func GuildIsLinked(guild string) bool {
 }
 
 // ScheduledAlerts returns a slice with all the users from a guild
-func ScheduledAlerts(minutes float64) map[string][]string {
-	rows, err := db.Query("SELECT AL_USER, GC_CHANNEL FROM alerts INNER JOIN guild_channels ON AL_GUILD=GC_GUILD WHERE AL_TIME=? AND AL_DISABLED=0", minutes)
-	if err != nil {
-		log.Printf("[Warn] Could not scan rows: %s", err.Error())
-		return nil
-	}
-	defer rows.Close()
-
-	users := make(map[string][]string)
-
-	for rows.Next() {
-		var (
-			user    string
-			channel string
-		)
-
-		if err := rows.Scan(&user, &channel); err != nil {
-			log.Printf("[Warn] Could not scan rows: %s", err.Error())
-			continue // Should not use it
-		}
-
-		if _, prs := users[channel]; !prs {
-			users[channel] = make([]string, 0)
-		}
-		users[channel] = append(users[channel], user)
-	}
-
-	return users
+func ScheduledAlerts(minutes float64) (*sql.Rows, error) {
+	return db.Query("SELECT AL_USER, GC_CHANNEL, GC_GUILD FROM alerts INNER JOIN guild_channels ON AL_GUILD=GC_GUILD WHERE AL_TIME=? AND AL_DISABLED=0 GROUP BY GC_GUILD, GC_CHANNEL", minutes)
 }

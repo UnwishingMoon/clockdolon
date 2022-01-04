@@ -42,7 +42,6 @@ func Start() {
 		for {
 			select {
 			case <-tk.C:
-
 				alertScheduled()
 			}
 		}
@@ -131,15 +130,15 @@ func linkCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 func timeCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string) {
 	var description string
-	daysPassed := time.Duration(time.Since(cetus.Cetus.DayStart).Seconds() / (150 * 60) * float64(time.Second))
+	daysPassed := time.Duration(time.Since(cetus.World.DayStart).Seconds() / (150 * 60) * float64(time.Second))
 
-	if math.Mod(time.Since(cetus.Cetus.DayStart).Seconds(), 150*60) < 100*60 {
+	if math.Mod(time.Since(cetus.World.DayStart).Seconds(), 150*60) < 100*60 {
 		// Day
-		remaining := time.Until(cetus.Cetus.NightStart.Add(daysPassed)).Round(1 * time.Second)
+		remaining := time.Until(cetus.World.NightStart.Add(daysPassed)).Round(1 * time.Second)
 		description = fmt.Sprintf("`%s` remaining until **night**!", remaining)
 	} else {
 		// Night
-		remaining := time.Until(cetus.Cetus.NightEnd.Add(daysPassed)).Round(1 * time.Second)
+		remaining := time.Until(cetus.World.NightEnd.Add(daysPassed)).Round(1 * time.Second)
 		description = fmt.Sprintf("`%s` remaining until the end of the **night**!", remaining)
 	}
 
@@ -237,9 +236,9 @@ func alertScheduled() {
 	minutes := cetus.WorldTime()
 
 	// Skip if out of my interval
-	if minutes < 1 || minutes > 60 {
+	/* if minutes < 1 || minutes > 60 {
 		return
-	}
+	} */
 
 	if minutes == 1 {
 		timeStr = "minute"
@@ -247,15 +246,49 @@ func alertScheduled() {
 		timeStr = "minutes"
 	}
 
-	users := db.ScheduledAlerts(minutes)
-
-	if len(users) == 0 {
+	rows, err := db.ScheduledAlerts(minutes)
+	if err != nil {
+		log.Printf("[Warn] Could not scan rows: %s", err.Error())
 		return
 	}
+	defer rows.Close()
 
-	for channel, m := range users {
-		description := fmt.Sprintf("**Clockdolon**\n`%v %s` before the **night**!\n\n<@%s>", minutes, timeStr, strings.Join(m, "> <@"))
+	onlineUsers := make(map[string][]string)
 
-		dg.ChannelMessageSend(channel, description)
+	for rows.Next() {
+		var (
+			users   string
+			channel string
+			guild   string
+		)
+
+		if err := rows.Scan(&users, &channel, &guild); err != nil {
+			log.Printf("[Warn] Could not scan rows: %s", err.Error())
+			continue // Should not use it
+		}
+
+		for _, v := range strings.Split(users, ",") {
+			prs, err := dg.State.Presence(guild, v)
+			if err != nil {
+				log.Printf("[Warn] Could not get user presence: %s", err.Error())
+				continue
+			}
+
+			if prs.Status != discordgo.StatusOffline {
+				if _, prs := onlineUsers[guild]; !prs {
+					onlineUsers[guild] = make([]string, 0)
+				}
+
+				onlineUsers[guild] = append(onlineUsers[guild], v)
+			}
+		}
+	}
+
+	for channel, u := range onlineUsers {
+		if len(u) > 0 {
+			description := fmt.Sprintf("**Clockdolon**\n`%v %s` before the **night**!\n\n<@%s>", minutes, timeStr, strings.Join(u, "> <@"))
+
+			dg.ChannelMessageSend(channel, description)
+		}
 	}
 }

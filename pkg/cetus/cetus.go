@@ -39,7 +39,7 @@ type Time struct {
 }
 
 // Cetus contains all the retrieved infos
-var Cetus = &Time{}
+var World = &Time{}
 
 func Start() {
 	populateTime()
@@ -72,20 +72,20 @@ func populateTime() {
 			start, _ := strconv.ParseInt(v.StartDate.Date.Timestamp, 10, 64)
 			end, _ := strconv.ParseInt(v.EndDate.Date.Timestamp, 10, 64)
 
-			Cetus.DayStart = time.UnixMilli(start)
-			Cetus.NightStart = time.UnixMilli(start).Add(time.Minute * 100)
-			Cetus.NightEnd = time.UnixMilli(end)
+			World.DayStart = time.UnixMilli(start)
+			World.NightStart = time.UnixMilli(start).Add(time.Minute * 100)
+			World.NightEnd = time.UnixMilli(end)
 		}
 	}
 }
 
 // WorldTime return the string time before the night appear
 func WorldTime() float64 {
-	daysPassed := time.Duration(time.Since(Cetus.DayStart).Seconds() / (150 * 60) * float64(time.Second))
+	daysPassed := time.Duration(time.Since(World.DayStart).Seconds() / (150 * 60) * float64(time.Second))
 
-	if math.Mod(time.Since(Cetus.DayStart).Seconds(), 150*60) < 100*60 {
+	if math.Mod(time.Since(World.DayStart).Seconds(), 150*60) < 100*60 {
 		// Day
-		return time.Until(Cetus.NightStart.Add(daysPassed)).Truncate(1 * time.Minute).Minutes()
+		return time.Until(World.NightStart.Add(daysPassed)).Truncate(1 * time.Minute).Minutes()
 	}
 
 	return 0
