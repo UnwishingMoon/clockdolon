@@ -29,7 +29,7 @@ func Start() {
 
 	// Handler for messages
 	dg.AddHandler(MessageCreate)
-	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsGuildPresences | discordgo.IntentsGuildMembers | discordgo.IntentsGuilds
+	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsGuildPresences | discordgo.IntentsGuilds
 
 	// Starting the connection to discord
 	if err = dg.Open(); err != nil {
