@@ -236,9 +236,9 @@ func alertScheduled() {
 	minutes := cetus.WorldTime()
 
 	// Skip if out of my interval
-	/* if minutes < 1 || minutes > 60 {
+	if minutes < 1 || minutes > 60 {
 		return
-	} */
+	}
 
 	if minutes == 1 {
 		timeStr = "minute"
@@ -275,18 +275,18 @@ func alertScheduled() {
 			}
 
 			if prs.Status != discordgo.StatusOffline {
-				if _, prs := onlineUsers[guild]; !prs {
-					onlineUsers[guild] = make([]string, 0)
+				if _, prs := onlineUsers[channel]; !prs {
+					onlineUsers[channel] = make([]string, 0)
 				}
 
-				onlineUsers[guild] = append(onlineUsers[guild], v)
+				onlineUsers[channel] = append(onlineUsers[channel], v)
 			}
 		}
 	}
 
 	for channel, u := range onlineUsers {
 		if len(u) > 0 {
-			description := fmt.Sprintf("**Clockdolon**\n`%v %s` before the **night**!\n\n<@%s>", minutes, timeStr, strings.Join(u, "> <@"))
+			description := fmt.Sprintf("`%v %s` before the **night**!\n\n<@%s>", minutes, timeStr, strings.Join(u, "> <@"))
 
 			dg.ChannelMessageSend(channel, description)
 		}

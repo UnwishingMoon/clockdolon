@@ -96,5 +96,5 @@ func GuildIsLinked(guild string) bool {
 
 // ScheduledAlerts returns a slice with all the users from a guild
 func ScheduledAlerts(minutes float64) (*sql.Rows, error) {
-	return db.Query("SELECT AL_USER, GC_CHANNEL, GC_GUILD FROM alerts INNER JOIN guild_channels ON AL_GUILD=GC_GUILD WHERE AL_TIME=? AND AL_DISABLED=0 GROUP BY GC_GUILD, GC_CHANNEL", minutes)
+	return db.Query("SELECT AL_USER, GC_CHANNEL, GC_GUILD FROM alerts INNER JOIN guild_channels ON AL_GUILD=GC_GUILD WHERE AL_TIME=? AND AL_DISABLED=0", minutes)
 }
