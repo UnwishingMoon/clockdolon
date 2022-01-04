@@ -1,5 +1,5 @@
 #Build
-FROM --platform=$BUILDPLATFORM golang:1.17 AS build
+FROM --platform=$BUILDPLATFORM golang:latest AS build
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ FROM gcr.io/distroless/static-debian11
 
 WORKDIR /
 
-COPY --from=build /app/app /app/config.toml /
+COPY --from=build /app/app /
 
 USER nonroot:nonroot
 
