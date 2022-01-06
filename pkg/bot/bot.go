@@ -56,29 +56,15 @@ func Close() {
 
 // MessageCreate is used to handle all messages received from discord
 func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	//var isAdmin bool = false
-
 	// Ignores other bots message and itself
 	if m.Author.ID == s.State.User.ID || m.Author.Bot {
 		return
 	}
 
 	// Prefix has to be the one set
-	if string(m.Content[0]) != app.Conf.Bot.Prefix {
+	if len(m.Content) == 0 || string(m.Content[0]) != app.Conf.Bot.Prefix {
 		return
 	}
-
-	// Checking if user is an admin
-	/* for _, v := range app.Conf.Bot.Admins {
-		if m.Author.ID == v {
-			isAdmin = true
-		}
-	} */
-
-	// Temporary block
-	/* if !isAdmin {
-		return
-	} */
 
 	// Removing the prefix
 	cmd := strings.Fields(m.Content[len(app.Conf.Bot.Prefix):])
@@ -130,16 +116,16 @@ func linkCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 func timeCommand(s *discordgo.Session, m *discordgo.MessageCreate, cmd []string) {
 	var description string
-	daysPassed := time.Duration(time.Since(cetus.World.DayStart).Seconds() / (150 * 60) * float64(time.Second))
+	durationPassed := time.Duration(time.Since(cetus.World.DayStart)/cetus.FullDay) * cetus.FullDay
 
 	if math.Mod(time.Since(cetus.World.DayStart).Seconds(), 150*60) < 100*60 {
 		// Day
-		remaining := time.Until(cetus.World.NightStart.Add(daysPassed)).Round(1 * time.Second)
+		remaining := time.Until(cetus.World.NightStart.Add(durationPassed)).Truncate(1 * time.Second)
 		description = fmt.Sprintf("`%s` remaining until **night**!", remaining)
 	} else {
 		// Night
-		remaining := time.Until(cetus.World.NightEnd.Add(daysPassed)).Round(1 * time.Second)
-		description = fmt.Sprintf("`%s` remaining until the end of the **night**!", remaining)
+		remaining := time.Until(cetus.World.NightEnd.Add(durationPassed)).Truncate(1 * time.Second)
+		description = fmt.Sprintf("`%s` remaining until the **end** of the **night**!", remaining)
 	}
 
 	s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
